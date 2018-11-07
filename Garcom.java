@@ -20,6 +20,7 @@ public class Garcom extends Thread {
             while (pedidos.size() < capacidade) {
                 Cliente cliente = bar.getProximoCliente();
                 if (cliente == null) {
+                    pedidos.add(null);
                 } else {
                     registraPedidos(cliente);
                 }
@@ -30,22 +31,24 @@ public class Garcom extends Thread {
     }
     public void entregaPedidos(ArrayList<Cliente> clientes) {
         while(!pedidos.isEmpty()) {
-            MonitorCliente clienteMonitor = pedidos.remove(0);
-            synchronized (clienteMonitor) {
-                clientes.get(clienteMonitor.getId()).setEstaComPedido(true);
-                System.out.println("Sou o garcom "+this.id+ " e entreguei o pedido do cliente " + clienteMonitor.getId());
-                clienteMonitor.notify();
-                bar.incContadorDeAtendimento();
-                System.out.println(bar.getContadorDeAtendimento());
-
+            if (pedidos.get(0) != null) {
+                MonitorCliente clienteMonitor = pedidos.remove(0);
+                synchronized (clienteMonitor) {
+                    clientes.get(clienteMonitor.getId()).setEstaComPedido(true);
+                    System.out.println("Sou o garcom " + this.id + " e entreguei o pedido do cliente " + clienteMonitor.getId());
+                    clienteMonitor.notify();
+                }
+            }
+            else{
+                pedidos.remove(0);
             }
         }
     }
 
     public void registraPedidos(Cliente cliente) {
         synchronized (cliente.getMonitor()) {
-            System.out.println("Sou o garcom " + this.id + " e anotei o pedido do Cliente " + cliente.getClienteId());
             cliente.setFezPedido(true);
+            System.out.println("Sou o garcom " + this.id + " e anotei o pedido do Cliente " + cliente.getClienteId());
             cliente.getMonitor().notify();
             pedidos.add(cliente.getMonitor());
         }

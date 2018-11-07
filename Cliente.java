@@ -76,7 +76,7 @@ public class Cliente extends Thread {
         return this.prontoParaPedir;
     }
 
-    public MonitorCliente getMonitor() {
+    public synchronized MonitorCliente getMonitor() {
         return this.monitor;
     }
 }

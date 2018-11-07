@@ -7,16 +7,16 @@ public class Bar extends Thread{
     private int numGarcom;
     private int capacidadeGarcom;
     private int numRodadas;
-    private int contadorDeAtendimento;
     private boolean aberto;
     private ArrayList<Cliente> clientes = new ArrayList<>();
+    private ArrayList<Cliente> clientesAtendidos = new ArrayList<>();
     private ArrayList<Garcom> garcoms = new ArrayList<>();
+    private Object monitorRodada = new Object();
     public Bar(int numCliente, int numGarcom, int capacidadeGarcom, int numRodadas){
         this.numCliente = numCliente;
         this.numGarcom = numGarcom;
         this.capacidadeGarcom = capacidadeGarcom;
         this.numRodadas = numRodadas;
-        this.contadorDeAtendimento = 0;
         this.aberto = true;
     }
     @Override
@@ -40,9 +40,18 @@ public class Bar extends Thread{
         while(numRodadas>0){
                 boolean teste = controleRodada();
                 if(teste == true && numRodadas>0){
-                    System.out.println("############");
-                    System.out.println("Começando nova rodada!!!");
-                    System.out.println("############");
+                    synchronized (monitorRodada) {
+                        try {
+                            monitorRodada.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        clientes.addAll(clientesAtendidos);
+                        clientesAtendidos.removeAll(clientesAtendidos);
+                        System.out.println("############");
+                        System.out.println("Começando nova rodada!!!");
+                        System.out.println("############");
+                    }
                 }
             }
         if(numRodadas==0){
@@ -56,31 +65,26 @@ public class Bar extends Thread{
     }
 
     synchronized public Cliente getProximoCliente() {
-        for (Cliente cliente: this.clientes) {
-            if(cliente.getFezPedido() == false){
-                return cliente;
-            }
+        if(!clientes.isEmpty()) {
+            Cliente cliente = clientes.remove(0);
+            clientesAtendidos.add(cliente);
+            return cliente;
         }
-        return null;
+        else {
+            return null;
+        }
     }
-    public ArrayList<Cliente> getClientes(){
-        return this.clientes;
+    public synchronized ArrayList<Cliente> getClientes(){
+        return this.clientesAtendidos;
     }
     public boolean controleRodada(){
         System.out.print("");
-        if(contadorDeAtendimento >= numCliente){
+        if(clientes.isEmpty()){
             System.out.println("teste");
             numRodadas--;
-            contadorDeAtendimento = 0;
             return true;
         }
         return false;
-    }
-    public synchronized void incContadorDeAtendimento(){
-        this.contadorDeAtendimento++;
-    }
-    public int getContadorDeAtendimento(){
-        return this.contadorDeAtendimento;
     }
     public boolean isAberto() {
         return aberto;
